@@ -51,6 +51,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private Fence fence;
     private Terrain[] terrains;
     private MenuBar menu;
+    private boolean gameover = false;
 
     private void addHoles() {
         Translate hole0Position = new Translate(
@@ -181,14 +182,17 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                         );
 
                         boolean isInHole = false;
+                        boolean toFast = this.ball.getSpeed() > MAX_BALL_SPEED;
+
                         for (Hole h : this.holes) {
                             if (h.handleCollision(this.ball)) {
                                 isInHole = true;
-                                this.menu.addPoints(h.getPoints());
+                                if (!toFast) {
+                                    this.menu.addPoints(h.getPoints());
+                                    this.gameover = this.menu.gameOver();
+                                }
                             }
                         }
-
-                        boolean toFast = this.ball.getSpeed() > MAX_BALL_SPEED;
 
                         if (stopped || (isInHole && !toFast)) {
                             this.root.getChildren().remove(this.ball);
@@ -197,6 +201,9 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 t.toFront();
                             }
                             this.ball = null;
+                            if (this.menu.gameOver()) {
+                                System.out.println("Game over your total points are: " + this.menu.getPoints());
+                            }
                         }
                     } else if (this.mouse_hold) {
                         double value = (System.currentTimeMillis() - this.time) / Main.MS_IN_S;
@@ -223,7 +230,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     @Override
     public void handle(MouseEvent mouseEvent) {
         this.mouse_hold = false;
-        if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_PRESSED) && mouseEvent.isPrimaryButtonDown()) {
+        if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_PRESSED) && mouseEvent.isPrimaryButtonDown() & !this.gameover) {
             this.time = System.currentTimeMillis();
             this.mouse_hold = true;
         } else if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_RELEASED)) {
@@ -235,7 +242,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
 
                 Translate ballPosition = this.player.getBallPosition();
                 Point2D ballSpeed = this.player.getSpeed().multiply(ballSpeedFactor);
-
+                this.menu.newAttempt();
                 this.ball = new Ball(Main.BALL_RADIUS, ballPosition, ballSpeed);
                 this.root.getChildren().addAll(this.ball);
             }

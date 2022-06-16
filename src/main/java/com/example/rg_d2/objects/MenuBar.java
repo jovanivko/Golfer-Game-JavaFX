@@ -3,6 +3,9 @@ package com.example.rg_d2.objects;
 import com.example.rg_d2.objects.shapes.Heart;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Translate;
 
 import java.util.ArrayList;
@@ -26,7 +29,7 @@ public class MenuBar extends Group {
         for (int i = 0; i < max_lives; i++) {
             Heart life = new Heart();
             double width = life.getBoundsInParent().getWidth();
-            life.getTransforms().add(new Translate(max_width - i * width - (i > 0 ? (i - 1) * width / 3 : 0), 0));
+            life.getTransforms().add(new Translate(max_width - (i + 1) * width - (i > 0 ? (i) * width / 3 : 0), 0));
             hearts.add(life);
         }
 
@@ -36,6 +39,9 @@ public class MenuBar extends Group {
             super.getChildren().add(h);
         }
         this.score = new Label(this.points.toString());
+        this.score.setTextAlignment(TextAlignment.RIGHT);
+        this.score.setFont(Font.font("Verdana", FontWeight.BOLD, 15));
+        this.score.getTransforms().add(new Translate(20, 0));
         super.getChildren().add(this.score);
 
     }
@@ -52,6 +58,10 @@ public class MenuBar extends Group {
     public void addPoints(int points) {
         this.points += points;
         this.score.setText(this.points.toString());
+    }
+
+    public int getPoints() {
+        return this.points;
     }
 
     public void newAttempt() {
