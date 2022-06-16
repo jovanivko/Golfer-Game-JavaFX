@@ -8,8 +8,9 @@ import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.paint.ImagePattern;
+import javafx.scene.paint.*;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 
@@ -58,28 +59,46 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                 Main.WINDOW_WIDTH / 2,
                 Main.WINDOW_HEIGHT * 0.1
         );
-        Hole hole0 = new Hole(Main.HOLE_RADIUS, hole0Position, 20);
+        Stop stops0[] = {
+                new Stop(0, Color.BLACK),
+                new Stop(1, Color.YELLOW)
+        };
+
+        RadialGradient gradient0 = new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE, stops0);
+        Hole hole0 = new Hole(Main.HOLE_RADIUS, hole0Position, 20, gradient0);
         this.root.getChildren().addAll(hole0);
 
+        Stop stops1[] = {
+                new Stop(0, Color.BLACK),
+                new Stop(1, Color.GREEN)
+        };
+        RadialGradient gradient1 = new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE, stops1);
         Translate hole1Position = new Translate(
                 Main.WINDOW_WIDTH / 2,
                 Main.WINDOW_HEIGHT * 0.4
         );
-        Hole hole1 = new Hole(Main.HOLE_RADIUS, hole1Position, 5);
+        Hole hole1 = new Hole(Main.HOLE_RADIUS, hole1Position, 5, gradient1);
         this.root.getChildren().addAll(hole1);
+
+        Stop stops2[] = {
+                new Stop(0, Color.BLACK),
+                new Stop(1, Color.BLUE)
+        };
+        RadialGradient gradient2 = new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE, stops2);
+
 
         Translate hole2Position = new Translate(
                 Main.WINDOW_WIDTH / 3,
                 Main.WINDOW_HEIGHT * 0.25
         );
-        Hole hole2 = new Hole(Main.HOLE_RADIUS, hole2Position, 10);
+        Hole hole2 = new Hole(Main.HOLE_RADIUS, hole2Position, 10, gradient2);
         this.root.getChildren().addAll(hole2);
 
         Translate hole3Position = new Translate(
                 Main.WINDOW_WIDTH * 2 / 3,
                 Main.WINDOW_HEIGHT * 0.25
         );
-        Hole hole3 = new Hole(Main.HOLE_RADIUS, hole3Position, 10);
+        Hole hole3 = new Hole(Main.HOLE_RADIUS, hole3Position, 10, gradient2);
         this.root.getChildren().addAll(hole3);
 
         this.holes = new Hole[]{
@@ -107,6 +126,18 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         Terrain ter3 = new Ice(TERRAIN_WIDTH, pos3, ice);
         this.root.getChildren().addAll(ter3);
         this.terrains = new Terrain[]{ter0, ter1, ter2, ter3};
+    }
+
+    public void endAttempt() {
+        this.root.getChildren().remove(this.ball);
+        for (Terrain t : this.terrains) {
+            t.toBack();
+            t.toFront();
+        }
+        this.ball = null;
+        if (this.menu.gameOver()) {
+            System.out.println("Game over your total points are: " + this.menu.getPoints());
+        }
     }
 
     @Override
@@ -187,23 +218,22 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                         for (Hole h : this.holes) {
                             if (h.handleCollision(this.ball)) {
                                 isInHole = true;
-                                if (!toFast) {
+                                if (!toFast && !this.ball.notStopped()) {
                                     this.menu.addPoints(h.getPoints());
+
+                                    try {
+                                        this.ball.playAnimation(Main.class.getMethod("endAttempt", null), this, h);
+                                    } catch (NoSuchMethodException e) {
+                                        throw new RuntimeException(e);
+                                    }
+
                                     this.gameover = this.menu.gameOver();
                                 }
                             }
                         }
 
-                        if (stopped || (isInHole && !toFast)) {
-                            this.root.getChildren().remove(this.ball);
-                            for (Terrain t : this.terrains) {
-                                t.toBack();
-                                t.toFront();
-                            }
-                            this.ball = null;
-                            if (this.menu.gameOver()) {
-                                System.out.println("Game over your total points are: " + this.menu.getPoints());
-                            }
+                        if (stopped && ball != null) {
+                            endAttempt();
                         }
                     } else if (this.mouse_hold) {
                         double value = (System.currentTimeMillis() - this.time) / Main.MS_IN_S;

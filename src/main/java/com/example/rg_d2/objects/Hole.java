@@ -10,20 +10,21 @@ import javafx.scene.transform.Translate;
 
 public class Hole extends Circle {
 	private int points;
-	public Hole ( double radius, Translate position , int points) {
+	private Translate position;
+	public Hole ( double radius, Translate position , int points, RadialGradient gradient) {
 		super ( radius);
 		this.points = points;
-		Stop stops[] = {
-				new Stop(0, Color.BLACK),
-				new Stop(1, Color.YELLOW)
-		};
-
-		RadialGradient gradient = new RadialGradient(0, 0, 0.5,0.5,0.5, true, CycleMethod.NO_CYCLE, stops);
+		this.position = position;
 		super.setFill(gradient);
 
 		super.getTransforms ( ).addAll ( position );
 	}
-
+	public double getX(){
+		return this.position.getX();
+	}
+	public double getY(){
+		return this.position.getY();
+	}
 	public int getPoints(){
 		return this.points;
 	}
