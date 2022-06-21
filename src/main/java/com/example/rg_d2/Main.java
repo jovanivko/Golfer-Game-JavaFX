@@ -8,6 +8,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.*;
@@ -34,12 +35,15 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private static final double BALL_DAMP_FACTOR = 0.995;
     private static final double MIN_BALL_SPEED = 5;
     private static final double MAX_BALL_SPEED = 900;
+    private static final double MAX_TIME = 10;
 
     private static final double HOLE_RADIUS = 3 * BALL_RADIUS;
     private static final double FENCE_WIDTH = 20;
     private static final double POWERBAR_HEIGHT = WINDOW_HEIGHT - FENCE_WIDTH;
     private static final double POWERBAR_WIDTH = 15;
     private static final double TERRAIN_WIDTH = 75;
+    private static final double BARRIER_WIDTH = 10;
+    private static final double BARRIER_HEIGHT = 0.2 * WINDOW_WIDTH;
     private static final int MAX_LIVES = 5;
 
     private Group root;
@@ -53,6 +57,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private Terrain[] terrains;
     private MenuBar menu;
     private boolean gameover = false;
+    private Barrier[] barriers;
 
     private void addHoles() {
         Translate hole0Position = new Translate(
@@ -128,6 +133,21 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         this.terrains = new Terrain[]{ter0, ter1, ter2, ter3};
     }
 
+    private void addBarriers(ImagePattern cob) {
+        Translate t0 = new Translate(Main.WINDOW_WIDTH / 2 - Main.BARRIER_WIDTH / 2, Main.WINDOW_HEIGHT * 0.15);
+        Barrier barrier0 = new Barrier(Main.BARRIER_WIDTH, Main.BARRIER_HEIGHT, t0, cob);
+        this.root.getChildren().add(barrier0);
+
+        Translate t1 = new Translate(Main.WINDOW_WIDTH / 3 - Main.BARRIER_HEIGHT / 2, Main.WINDOW_HEIGHT * 0.5);
+        Barrier barrier1 = new Barrier(Main.BARRIER_HEIGHT, Main.BARRIER_WIDTH, t1, cob);
+        this.root.getChildren().add(barrier1);
+
+        Translate t2 = new Translate(Main.WINDOW_WIDTH * 2 / 3 - Main.BARRIER_HEIGHT / 2, Main.WINDOW_HEIGHT * 0.5);
+        Barrier barrier2 = new Barrier(Main.BARRIER_HEIGHT, Main.BARRIER_WIDTH, t2, cob);
+        this.root.getChildren().add(barrier2);
+        this.barriers = new Barrier[]{barrier0, barrier1, barrier2};
+    }
+
     public void endAttempt() {
         this.root.getChildren().remove(this.ball);
         for (Terrain t : this.terrains) {
@@ -143,16 +163,18 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     @Override
     public void start(Stage stage) throws IOException {
         this.root = new Group();
-
+        //TODO otvoriti popup dijaloge za biranje podloge i topa
         Image backgroundImage = new Image(Main.class.getClassLoader().getResourceAsStream("grass.jpg"));
         Image fenceImage = new Image(Main.class.getClassLoader().getResourceAsStream("fence.jpg"));
         Image iceImage = new Image(Main.class.getClassLoader().getResourceAsStream("ice.jpg"));
         Image mudImage = new Image(Main.class.getClassLoader().getResourceAsStream("mud.jpg"));
+        Image cobblestoneImage = new Image(Main.class.getClassLoader().getResourceAsStream("cobblestone.jpg"));
 
         ImagePattern background = new ImagePattern(backgroundImage);
         ImagePattern fence_fill = new ImagePattern(fenceImage);
         ImagePattern ice_fill = new ImagePattern(iceImage);
         ImagePattern mud_fill = new ImagePattern(mudImage);
+        ImagePattern cobblestone_fill = new ImagePattern(cobblestoneImage);
 
         Scene scene = new Scene(this.root, Main.WINDOW_WIDTH, WINDOW_HEIGHT, background);
 
@@ -173,13 +195,13 @@ public class Main extends Application implements EventHandler<MouseEvent> {
 
         this.powerBar = new PowerBar(POWERBAR_WIDTH, POWERBAR_HEIGHT, powerBarPosition);
 
-        this.menu = new MenuBar(MAX_LIVES, WINDOW_WIDTH);
+        this.menu = new MenuBar(MAX_LIVES, WINDOW_WIDTH, MAX_TIME);
 
         this.root.getChildren().addAll(this.fence, this.player, this.powerBar, this.menu);
 
         this.addHoles();
         this.addTerrain(ice_fill, mud_fill);
-//        this.addTerrain(null, null);
+        this.addBarriers(cobblestone_fill);
 
         scene.addEventHandler(
                 MouseEvent.MOUSE_MOVED,
@@ -189,12 +211,16 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                         Main.PLAYER_MAX_ANGLE_OFFSET
                 )
         );
+        scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> this.handleKeyPressed(keyEvent));
 
         scene.addEventHandler(MouseEvent.ANY, this);
 
         Timer timer = new Timer(
                 deltaNanoseconds -> {
                     double deltaSeconds = (double) deltaNanoseconds / Main.NS_IN_S;
+                    if(this.menu.update(deltaSeconds)){
+                    //TODO izvuci trenutak kada nestane vreme
+                    };
                     if (this.ball != null) {
                         double damp = BALL_DAMP_FACTOR;
                         for (Terrain t : terrains) {
@@ -202,15 +228,27 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 damp = damp * t.getSpeedModifier();
                             }
                         }
-                        boolean stopped = this.ball.update(
-                                deltaSeconds,
-                                FENCE_WIDTH,
-                                Main.WINDOW_WIDTH - FENCE_WIDTH,
-                                FENCE_WIDTH,
-                                Main.WINDOW_HEIGHT - FENCE_WIDTH,
-                                damp,
-                                Main.MIN_BALL_SPEED
-                        );
+                        for (Barrier b : this.barriers){
+                            switch(b.handleCollision(this.ball)){
+                                case 1 :
+                                    this.ball.switchHorizontal();
+                                    break;
+                                case -1 :
+                                    this.ball.switchVertical();
+                                    break;
+                                case 0 : continue;
+                                default: continue;
+                            }
+                        }
+                            boolean stopped = this.ball.update(
+                                    deltaSeconds,
+                                    FENCE_WIDTH,
+                                    Main.WINDOW_WIDTH - FENCE_WIDTH,
+                                    FENCE_WIDTH,
+                                    Main.WINDOW_HEIGHT - FENCE_WIDTH,
+                                    damp,
+                                    Main.MIN_BALL_SPEED
+                            );
 
                         boolean isInHole = false;
                         boolean toFast = this.ball.getSpeed() > MAX_BALL_SPEED;
@@ -231,7 +269,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 }
                             }
                         }
-
+                        //TODO generisati tokene i letece objekte
                         if (stopped && ball != null) {
                             endAttempt();
                         }
@@ -265,6 +303,9 @@ public class Main extends Application implements EventHandler<MouseEvent> {
             this.mouse_hold = true;
         } else if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_RELEASED)) {
             if (this.time != -1 && this.ball == null) {
+                if(this.menu.notStarted()){
+                    this.menu.start();
+                }
                 double value = (System.currentTimeMillis() - this.time) / Main.MS_IN_S;
                 double deltaSeconds = Utilities.clamp(value, 0, Main.MAXIMUM_HOLD_IN_S);
 
@@ -279,6 +320,13 @@ public class Main extends Application implements EventHandler<MouseEvent> {
             this.time = -1;
             this.mouse_hold = false;
             this.powerBar.updateBar(0);
+        }
+    }
+
+    public void handleKeyPressed(KeyEvent keyEvent) {
+        if(this.ball!=null && keyEvent.getCode()==KeyCode.SPACE){
+            this.gameover = this.menu.gameOver();
+            this.endAttempt();
         }
     }
 }

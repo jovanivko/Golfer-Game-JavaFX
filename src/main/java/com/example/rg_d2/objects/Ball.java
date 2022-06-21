@@ -104,4 +104,11 @@ public class Ball extends Circle {
 
         return result;
     }
+
+    public void switchHorizontal(){
+        this.speed = new Point2D(-this.speed.getX(), this.speed.getY());
+    }
+    public void switchVertical(){
+        this.speed = new Point2D(this.speed.getX(), -this.speed.getY());
+    }
 }
