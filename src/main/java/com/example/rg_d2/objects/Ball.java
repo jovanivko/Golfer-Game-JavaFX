@@ -111,4 +111,8 @@ public class Ball extends Circle {
     public void switchVertical(){
         this.speed = new Point2D(this.speed.getX(), -this.speed.getY());
     }
+    public void translate(double x, double y){
+        this.position.setX(x);
+        this.position.setY(y);
+    }
 }

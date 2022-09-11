@@ -41,7 +41,8 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private static final double FENCE_WIDTH = 20;
     private static final double POWERBAR_HEIGHT = WINDOW_HEIGHT - FENCE_WIDTH;
     private static final double POWERBAR_WIDTH = 15;
-    private static final double TERRAIN_WIDTH = 75;
+    private static final double TERRAIN_WIDTH = 35;
+    private static final double TELEPORT_WIDTH = 25;
     private static final double BARRIER_WIDTH = 10;
     private static final double BARRIER_HEIGHT = 0.2 * WINDOW_WIDTH;
     private static final int MAX_LIVES = 5;
@@ -58,6 +59,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private MenuBar menu;
     private boolean gameover = false;
     private Barrier[] barriers;
+    private TeleportationField[] teleports;
 
     private void addHoles() {
         Translate hole0Position = new Translate(
@@ -148,6 +150,20 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         this.barriers = new Barrier[]{barrier0, barrier1, barrier2};
     }
 
+    private void addTeleports() {
+        Translate t1 = new Translate(Main.WINDOW_WIDTH * 0.2, Main.WINDOW_HEIGHT * 0.15);
+        Translate t2 = new Translate(Main.WINDOW_WIDTH * 0.8 - Main.TELEPORT_WIDTH, Main.WINDOW_HEIGHT * 0.7);
+        TeleportationField teleport1 = new TeleportationField(Main.TELEPORT_WIDTH, t1, t2, Color.ALICEBLUE);
+        this.root.getChildren().add(teleport1);
+
+        Translate t3 = new Translate(Main.WINDOW_WIDTH * 0.8 - Main.TELEPORT_WIDTH, Main.WINDOW_HEIGHT * 0.15);
+        Translate t4 = new Translate(Main.WINDOW_WIDTH * 0.2, Main.WINDOW_HEIGHT * 0.7);
+        TeleportationField teleport2 = new TeleportationField(Main.TELEPORT_WIDTH, t3, t4, Color.CORAL);
+        this.root.getChildren().add(teleport2);
+
+        this.teleports = new TeleportationField[]{teleport1, teleport2};
+    }
+
     public void endAttempt() {
         this.root.getChildren().remove(this.ball);
         for (Terrain t : this.terrains) {
@@ -155,6 +171,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
             t.toFront();
         }
         this.ball = null;
+        this.gameover = this.menu.gameOver();
         if (this.menu.gameOver()) {
             System.out.println("Game over your total points are: " + this.menu.getPoints());
         }
@@ -202,6 +219,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         this.addHoles();
         this.addTerrain(ice_fill, mud_fill);
         this.addBarriers(cobblestone_fill);
+        this.addTeleports();
 
         scene.addEventHandler(
                 MouseEvent.MOUSE_MOVED,
@@ -218,9 +236,9 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         Timer timer = new Timer(
                 deltaNanoseconds -> {
                     double deltaSeconds = (double) deltaNanoseconds / Main.NS_IN_S;
-                    if(this.menu.update(deltaSeconds)){
-                    //TODO izvuci trenutak kada nestane vreme
-                    };
+                    if (this.menu.update(deltaSeconds)) {
+                        //TODO izvuci trenutak kada nestane vreme
+                    }
                     if (this.ball != null) {
                         double damp = BALL_DAMP_FACTOR;
                         for (Terrain t : terrains) {
@@ -228,27 +246,34 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 damp = damp * t.getSpeedModifier();
                             }
                         }
-                        for (Barrier b : this.barriers){
-                            switch(b.handleCollision(this.ball)){
-                                case 1 :
+
+                        for (TeleportationField t: this.teleports){
+                            t.handleCollision(this.ball);
+                        }
+
+                        for (Barrier b : this.barriers) {
+                            switch (b.handleCollision(this.ball)) {
+                                case 1:
                                     this.ball.switchHorizontal();
                                     break;
-                                case -1 :
+                                case -1:
                                     this.ball.switchVertical();
                                     break;
-                                case 0 : continue;
-                                default: continue;
+                                case 0:
+                                    continue;
+                                default:
+                                    continue;
                             }
                         }
-                            boolean stopped = this.ball.update(
-                                    deltaSeconds,
-                                    FENCE_WIDTH,
-                                    Main.WINDOW_WIDTH - FENCE_WIDTH,
-                                    FENCE_WIDTH,
-                                    Main.WINDOW_HEIGHT - FENCE_WIDTH,
-                                    damp,
-                                    Main.MIN_BALL_SPEED
-                            );
+                        boolean stopped = this.ball.update(
+                                deltaSeconds,
+                                FENCE_WIDTH,
+                                Main.WINDOW_WIDTH - FENCE_WIDTH,
+                                FENCE_WIDTH,
+                                Main.WINDOW_HEIGHT - FENCE_WIDTH,
+                                damp,
+                                Main.MIN_BALL_SPEED
+                        );
 
                         boolean isInHole = false;
                         boolean toFast = this.ball.getSpeed() > MAX_BALL_SPEED;
@@ -264,8 +289,6 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                     } catch (NoSuchMethodException e) {
                                         throw new RuntimeException(e);
                                     }
-
-                                    this.gameover = this.menu.gameOver();
                                 }
                             }
                         }
@@ -303,7 +326,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
             this.mouse_hold = true;
         } else if (mouseEvent.getEventType().equals(MouseEvent.MOUSE_RELEASED)) {
             if (this.time != -1 && this.ball == null) {
-                if(this.menu.notStarted()){
+                if (this.menu.notStarted()) {
                     this.menu.start();
                 }
                 double value = (System.currentTimeMillis() - this.time) / Main.MS_IN_S;
@@ -324,8 +347,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     }
 
     public void handleKeyPressed(KeyEvent keyEvent) {
-        if(this.ball!=null && keyEvent.getCode()==KeyCode.SPACE){
-            this.gameover = this.menu.gameOver();
+        if (this.ball != null && keyEvent.getCode() == KeyCode.SPACE) {
             this.endAttempt();
         }
     }
