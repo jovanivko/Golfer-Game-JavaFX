@@ -19,36 +19,106 @@ public class Player extends Group {
 
     private double baseRadius;
 
-    public Player(double width, double height, Translate position) {
+    public Player(double width, double height, Translate position, int type) {
         this.width = width;
         this.height = height;
         this.position = position;
-        this.baseRadius = width / 2;
+        //switch u odnosu na type pa svaki drugacije;
+        switch (type) {
+            case 0: {
+                this.baseRadius = width / 2;
 
-        Circle base = new Circle(baseRadius, Color.ORANGE);
+                Circle base = new Circle(baseRadius, Color.ORANGE);
 
-        base.getTransforms().add(new Translate(width / 2, height - baseRadius));
+                base.getTransforms().add(new Translate(width / 2, height - baseRadius));
 
-        Path cannon = new Path(
-                new MoveTo(width / 4, 0),
-                new LineTo(0, height - baseRadius),
-                new HLineTo(width),
-                new LineTo(width * 3 / 4, 0),
-                new ClosePath()
-        );
-        cannon.setFill(Color.LIGHTBLUE);
+                Path cannon = new Path(
+                        new MoveTo(width / 4, 0),
+                        new LineTo(0, height - baseRadius),
+                        new HLineTo(width),
+                        new LineTo(width * 3 / 4, 0),
+                        new ClosePath()
+                );
+                cannon.setFill(Color.LIGHTBLUE);
 
-        super.getChildren().addAll(cannon, base);
+                super.getChildren().addAll(cannon, base);
 
-        this.rotate = new Rotate();
+                this.rotate = new Rotate(0, 0, 0);
 
-        super.getTransforms().addAll(
-                position,
-                new Translate(width / 2, height - baseRadius),
-                rotate,
-                new Translate(-width / 2, -(height - baseRadius))
-        );
+                super.getTransforms().addAll(
+                        position,
+                        new Translate(width / 2, height - baseRadius),
+                        rotate,
+                        new Translate(-width / 2, -(height - baseRadius))
+                );
+                break;
+            }
+            case 1: {
+                Rectangle rec = new Rectangle(this.position.getX() - this.width / 2, this.position.getY() + this.height - 2 * this.width, this.width * 2, 2 * this.width);
+                rec.setFill(Color.ORANGE);
+                this.baseRadius = width / 2;
+
+                Path cannon = new Path(
+                        new MoveTo(0, 0),
+                        new VLineTo(height - baseRadius),
+                        new ArcTo(this.baseRadius, this.baseRadius, 0, this.width, this.height - this.baseRadius, false, false),
+                        new VLineTo(0),
+                        new ClosePath()
+                );
+                cannon.setFill(Color.LIGHTBLUE);
+
+                this.rotate = new Rotate();
+
+                cannon.getTransforms().addAll(
+                        position,
+                        new Translate(width / 2, height - baseRadius),
+                        rotate,
+                        new Translate(-width / 2, -(height - baseRadius))
+                );
+
+                super.getChildren().addAll(rec, cannon);
+                break;
+            }
+            case 2: {
+                this.baseRadius = this.width / 2;
+                Path base = new Path(
+                        new MoveTo(this.width / 2, 0),
+                        new LineTo(0, this.width),
+                        new HLineTo(3 * this.width),
+                        new LineTo(2.5 * this.width, 0),
+                        new ClosePath()
+                );
+                base.setFill(Color.DARKGRAY);
+                base.setStroke(null);
+                base.getTransforms().add(new Translate(this.position.getX() - this.width, this.position.getY() + this.height - this.width));
+                Path cannon = new Path(
+                        new MoveTo(this.width / 4, 0),
+                        new VLineTo(height - baseRadius),
+                        new ArcTo(this.width / 4, this.width / 4, 0, 3 / 4 * this.width, this.height - this.baseRadius, false, false),
+                        new VLineTo(0),
+                        new ClosePath()
+                );
+                cannon.setFill(Color.DARKGRAY);
+                cannon.setStroke(null);
+
+                this.rotate = new Rotate();
+                this.position = new Translate(this.position.getX() + this.width * 3 / 8, this.position.getY());
+                cannon.getTransforms().addAll(
+                        this.position,
+                        new Translate(width / 4, height - baseRadius),
+                        rotate,
+                        new Translate(-width / 4, -(height - baseRadius))
+                );
+                super.getChildren().addAll(base, cannon);
+                break;
+            }
+        }
     }
+
+    /*public void correctPivot(double w, double h) {
+        this.rotate.setPivotX(w / 2);
+        this.rotate.setPivotY(h - this.baseRadius);
+    }*/
 
     public void handleMouseMoved(MouseEvent mouseEvent, double minAngleOffset, double maxAngleOffset) {
         Bounds bounds = super.getBoundsInParent();
@@ -69,7 +139,7 @@ public class Player extends Group {
 
     public Translate getBallPosition() {
         double startX = this.position.getX() + this.width / 2;
-        double startY = this.position.getY() + this.height;
+        double startY = this.position.getY() + this.height - this.baseRadius;
 
         double x = startX + Math.sin(Math.toRadians(this.rotate.getAngle())) * this.height;
         double y = startY - Math.cos(Math.toRadians(this.rotate.getAngle())) * this.height;

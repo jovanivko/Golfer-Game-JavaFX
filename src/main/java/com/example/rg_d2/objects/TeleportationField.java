@@ -79,6 +79,10 @@ public class TeleportationField extends Group {
         }
     }
 
+    public boolean handleCollision(Circle circle) {
+        return this.field2.handleCollision(circle) || this.field1.handleCollision(circle);
+    }
+
 }
 
 
