@@ -7,7 +7,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Translate;
 
 public abstract class Terrain extends Rectangle {
-    private double speedModifier;
+    private final double speedModifier;
 
     protected Terrain(double edge, Translate position, double modifier, ImagePattern background) {
         super(edge, edge, background);
@@ -20,7 +20,6 @@ public abstract class Terrain extends Rectangle {
 
         double ballX = ballBounds.getCenterX();
         double ballY = ballBounds.getCenterY();
-        double ballRadius = ball.getRadius();
 
         Bounds terrainBounds = super.getBoundsInParent();
 
@@ -29,12 +28,10 @@ public abstract class Terrain extends Rectangle {
         double maxX = terrainBounds.getMaxX();
         double maxY = terrainBounds.getMaxY();
 
-        boolean result = (ballX < maxX && ballX > minX) && (ballY > minY && ballY < maxY);
-
-        return result;
+        return (ballX < maxX && ballX > minX) && (ballY > minY && ballY < maxY);
     }
 
-    public double getSpeedModifier(){
+    public double getSpeedModifier() {
         return this.speedModifier;
     }
 }

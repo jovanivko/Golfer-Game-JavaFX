@@ -12,8 +12,8 @@ import javafx.scene.transform.Translate;
 
 public class Player extends Group {
 
-    private double width;
-    private double height;
+    private final double width;
+    private final double height;
     private Translate position;
     private Rotate rotate;
 
@@ -43,7 +43,7 @@ public class Player extends Group {
 
                 super.getChildren().addAll(cannon, base);
 
-                this.rotate = new Rotate(0, 0, 0);
+                this.rotate = new Rotate(0);
 
                 super.getTransforms().addAll(
                         position,
@@ -94,7 +94,7 @@ public class Player extends Group {
                 Path cannon = new Path(
                         new MoveTo(this.width / 4, 0),
                         new VLineTo(height - baseRadius),
-                        new ArcTo(this.width / 4, this.width / 4, 0, 3 / 4 * this.width, this.height - this.baseRadius, false, false),
+                        new ArcTo(this.width / 4, this.width / 4, 0, 0.75 * this.width, this.height - this.baseRadius, false, false),
                         new VLineTo(0),
                         new ClosePath()
                 );
@@ -102,23 +102,18 @@ public class Player extends Group {
                 cannon.setStroke(null);
 
                 this.rotate = new Rotate();
-                this.position = new Translate(this.position.getX() + this.width * 3 / 8, this.position.getY());
+                this.position = new Translate(this.position.getX(), this.position.getY());
                 cannon.getTransforms().addAll(
                         this.position,
-                        new Translate(width / 4, height - baseRadius),
+                        new Translate(width / 2, height - baseRadius),
                         rotate,
-                        new Translate(-width / 4, -(height - baseRadius))
+                        new Translate(-width / 2, -(height - baseRadius))
                 );
                 super.getChildren().addAll(base, cannon);
                 break;
             }
         }
     }
-
-    /*public void correctPivot(double w, double h) {
-        this.rotate.setPivotX(w / 2);
-        this.rotate.setPivotY(h - this.baseRadius);
-    }*/
 
     public void handleMouseMoved(MouseEvent mouseEvent, double minAngleOffset, double maxAngleOffset) {
         Bounds bounds = super.getBoundsInParent();
@@ -144,9 +139,7 @@ public class Player extends Group {
         double x = startX + Math.sin(Math.toRadians(this.rotate.getAngle())) * this.height;
         double y = startY - Math.cos(Math.toRadians(this.rotate.getAngle())) * this.height;
 
-        Translate result = new Translate(x, y);
-
-        return result;
+        return new Translate(x, y);
     }
 
     public Point2D getSpeed() {

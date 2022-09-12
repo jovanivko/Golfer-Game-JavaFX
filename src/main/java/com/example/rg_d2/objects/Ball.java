@@ -14,9 +14,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class Ball extends Circle {
-    private Translate position;
+    private final Translate position;
     private Point2D speed;
-    private ParallelTransition fade;
     private boolean stopped;
 
     public Ball(double radius, Translate position, Point2D speed) {
@@ -54,8 +53,8 @@ public class Ball extends Circle {
         st.setToY(0);
         st.setCycleCount(1);
 
-        this.fade = new ParallelTransition(tt, st);
-        this.fade.setOnFinished(e -> {
+        ParallelTransition fade = new ParallelTransition(tt, st);
+        fade.setOnFinished(e -> {
             try {
                 method.invoke(obj, null);
             } catch (IllegalAccessException | InvocationTargetException ex) {
@@ -63,7 +62,7 @@ public class Ball extends Circle {
             }
         });
 
-        this.fade.play();
+        fade.play();
         this.stopped = true;
     }
 
@@ -71,7 +70,7 @@ public class Ball extends Circle {
         boolean result = false;
         if (this.stopped) {
 
-            return result;
+            return false;
         }
         double newX = this.position.getX() + this.speed.getX() * ds;
         double newY = this.position.getY() + this.speed.getY() * ds;
@@ -105,13 +104,15 @@ public class Ball extends Circle {
         return result;
     }
 
-    public void switchHorizontal(){
+    public void switchHorizontal() {
         this.speed = new Point2D(-this.speed.getX(), this.speed.getY());
     }
-    public void switchVertical(){
+
+    public void switchVertical() {
         this.speed = new Point2D(this.speed.getX(), -this.speed.getY());
     }
-    public void translate(double x, double y){
+
+    public void translate(double x, double y) {
         this.position.setX(x);
         this.position.setY(y);
     }

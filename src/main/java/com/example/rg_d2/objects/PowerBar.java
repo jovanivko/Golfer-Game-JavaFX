@@ -7,8 +7,7 @@ import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 
 public class PowerBar extends Rectangle {
-    private double max_height;
-    private Translate postion;
+    private final double max_height;
 
     public PowerBar(double width, double height, Translate position) {
         super(width, 0, Color.RED);

@@ -80,8 +80,10 @@ public class MenuBar extends Group {
     }
 
     public void addPoints(int points) {
+        System.out.println("Points before: " + this.points);
         this.points += points;
         this.score.setText(this.points.toString());
+        System.out.println("Points after: " + this.points);
     }
 
     public int getPoints() {
@@ -126,12 +128,17 @@ public class MenuBar extends Group {
     }
 
     public void addTime(int points) {
+        System.out.println("Time before: " + this.remaining_time);
         this.remaining_time += points;
         this.remaining.setText(Double.toString(Math.round(this.remaining_time)));
         this.remainingLine.setWidth(50 * this.remaining_time / this.max_time);
+        System.out.println("Time after: " + this.remaining_time);
     }
 
     public void addLife() {
-        this.hearts[++this.lives].setVisible(true);
+        System.out.println("Lives before: " + this.lives);
+
+        this.hearts[this.lives++].setVisible(true);
+        System.out.println("Lives after: " + this.lives);
     }
 }

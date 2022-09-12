@@ -5,6 +5,8 @@ import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.Shape;
 import javafx.scene.transform.Translate;
 
 import java.util.ArrayList;
@@ -12,11 +14,11 @@ import java.util.List;
 
 public abstract class Token extends Circle {
     protected int points;
-    private double radius;
+    private final double radius;
     protected MenuBar menu;
     private double duration;
 
-    private static List<Node> objects = new ArrayList<>();
+    private static final List<Shape> objects = new ArrayList<>();
 
     public Token(double minX, double minY, double maxX, double maxY, double radius, MenuBar menu) {
         super(radius, Color.YELLOW);
@@ -29,33 +31,40 @@ public abstract class Token extends Circle {
             double y = Math.random() * (maxY - minY - 2 * radius) + minY + radius;
             this.setCenterX(x);
             this.setCenterY(y);
-            for (int i = 0; i < objects.size(); i++) {
-                if (objects.get(i) instanceof Barrier) {
-                    if (((Barrier) objects.get(i)).handleCollision(this) != 0) invalid = true;
-                    continue;
+            for (Shape object : objects) {
+                /*if (object instanceof Barrier) {
+                    if (((Barrier) object).handleCollision(this) != 0) invalid = true;
+                    break;
                 }
-                if (objects.get(i) instanceof Hole) {
-                    if (((Hole) objects.get(i)).handleCollision(this)) invalid = true;
-                    continue;
+                if (object instanceof Hole) {
+                    if (((Hole) object).handleCollision(this)) invalid = true;
+                    break;
                 }
-                if (objects.get(i) instanceof Terrain) {
-                    if (((Terrain) objects.get(i)).handleCollision(this)) invalid = true;
-                    continue;
+                if (object instanceof Terrain) {
+                    if (((Terrain) object).handleCollision(this)) invalid = true;
+                    break;
                 }
-                if (objects.get(i) instanceof TeleportationField) {
-                    if (((TeleportationField) objects.get(i)).handleCollision(this)) invalid = true;
-                    continue;
+                if (object instanceof TeleportationField) {
+                    if (((TeleportationField) object).handleCollision(this)) invalid = true;
+                    break;
+                }*/
+                if (((Path) Shape.intersect(this, object)).getElements().size() > 0) {
+                    invalid = true;
+                    break;
                 }
-                if (x >= 250 && x <= 350 && y < 700 && y >= 600) invalid = true;
+                if (x >= 250 && x <= 350 && y < 700 && y >= 600) {
+                    invalid = true;
+                    break;
+                }
             }
         } while (invalid);
     }
 
-    public static void addNode(Node node) {
+    public static void addNode(Shape node) {
         Token.objects.add(node);
     }
 
-    public static void removeNode(Node node) {
+    public static void removeNode(Shape node) {
         Token.objects.remove(node);
     }
 

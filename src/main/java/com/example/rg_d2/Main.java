@@ -19,6 +19,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.*;
+import javafx.scene.shape.Shape;
 import javafx.scene.transform.Translate;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -27,6 +28,7 @@ import javafx.stage.StageStyle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Main extends Application implements EventHandler<MouseEvent> {
     private static final double WINDOW_WIDTH = 600;
@@ -55,7 +57,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private static final double BARRIER_HEIGHT = 0.2 * WINDOW_WIDTH;
     private static final int MAX_LIVES = 5;
     private static final double TOKEN_RADIUS = Main.PLAYER_WIDTH / 2;
-
+    private static final double ENEMY_SPEED = 500;
     private Group root;
     private Player player;
     private Ball ball;
@@ -63,24 +65,25 @@ public class Main extends Application implements EventHandler<MouseEvent> {
     private Hole[] holes;
     private PowerBar powerBar;
     private boolean mouse_hold;
-    private Fence fence;
     private Terrain[] terrains;
     private MenuBar menu;
     private boolean gameover = false;
     private Barrier[] barriers;
     private TeleportationField[] teleports;
     private double dampFactor;
-    private ImagePattern background;
     private double max_ball_speed;
     private List<Token> tokens;
-    private double tokenTime = 4;
+    private double tokenTime = 4.0;
+
+    private double enemyTime = 4.0;
+    private final List<Enemy> enemies = new ArrayList<>();
 
     private void addHoles() {
         Translate hole0Position = new Translate(
                 Main.WINDOW_WIDTH / 2,
                 Main.WINDOW_HEIGHT * 0.1
         );
-        Stop stops0[] = {
+        Stop[] stops0 = {
                 new Stop(0, Color.BLACK),
                 new Stop(1, Color.YELLOW)
         };
@@ -89,7 +92,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         Hole hole0 = new Hole(Main.HOLE_RADIUS, hole0Position, 20, gradient0);
         this.root.getChildren().addAll(hole0);
 
-        Stop stops1[] = {
+        Stop[] stops1 = {
                 new Stop(0, Color.BLACK),
                 new Stop(1, Color.GREEN)
         };
@@ -101,7 +104,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         Hole hole1 = new Hole(Main.HOLE_RADIUS, hole1Position, 5, gradient1);
         this.root.getChildren().addAll(hole1);
 
-        Stop stops2[] = {
+        Stop[] stops2 = {
                 new Stop(0, Color.BLACK),
                 new Stop(1, Color.BLUE)
         };
@@ -180,10 +183,12 @@ public class Main extends Application implements EventHandler<MouseEvent> {
 
     public void endAttempt() {
         this.root.getChildren().remove(this.ball);
+
         for (Terrain t : this.terrains) {
             t.toBack();
             t.toFront();
         }
+
         this.ball = null;
         this.gameover = this.menu.gameOver();
         if (this.menu.gameOver()) {
@@ -203,7 +208,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         selectionStage.setScene(pickGround);
         selectionStage.showAndWait();
         this.dampFactor = pickGround.getSelectedDampFactor();
-        this.background = pickGround.getSelectedBackground();
+        ImagePattern background = pickGround.getSelectedBackground();
 
         CannonSelectionScene pickCannon = new CannonSelectionScene(Main.PLAYER_WIDTH, Main.PLAYER_HEIGHT);
         selectionStage.setScene(pickCannon);
@@ -211,17 +216,17 @@ public class Main extends Application implements EventHandler<MouseEvent> {
 
         this.root = new Group();
 
-        Image fenceImage = new Image(Main.class.getClassLoader().getResourceAsStream("fence.jpg"));
-        Image iceImage = new Image(Main.class.getClassLoader().getResourceAsStream("ice.jpg"));
-        Image mudImage = new Image(Main.class.getClassLoader().getResourceAsStream("mud.jpg"));
-        Image cobblestoneImage = new Image(Main.class.getClassLoader().getResourceAsStream("cobblestone.jpg"));
+        Image fenceImage = new Image(Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream("fence.jpg")));
+        Image iceImage = new Image(Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream("ice.jpg")));
+        Image mudImage = new Image(Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream("mud.jpg")));
+        Image cobblestoneImage = new Image(Objects.requireNonNull(Main.class.getClassLoader().getResourceAsStream("cobblestone.jpg")));
 
         ImagePattern fence_fill = new ImagePattern(fenceImage);
         ImagePattern ice_fill = new ImagePattern(iceImage);
         ImagePattern mud_fill = new ImagePattern(mudImage);
         ImagePattern cobblestone_fill = new ImagePattern(cobblestoneImage);
 
-        Scene scene = new Scene(this.root, WINDOW_WIDTH, WINDOW_HEIGHT, this.background);
+        Scene scene = new Scene(this.root, WINDOW_WIDTH, WINDOW_HEIGHT, background);
         Translate playerPosition = new Translate(
                 Main.WINDOW_WIDTH / 2 - Main.PLAYER_WIDTH / 2,
                 Main.WINDOW_HEIGHT - FENCE_WIDTH - Main.PLAYER_HEIGHT
@@ -231,7 +236,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         this.max_ball_speed = pickCannon.getSelectedMaximumSpeed();
         //if (cannon == 2) this.player.correctPivot(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT);
 
-        this.fence = new Fence(Main.FENCE_WIDTH, Main.WINDOW_HEIGHT, Main.WINDOW_WIDTH, fence_fill);
+        Fence fence = new Fence(Main.FENCE_WIDTH, Main.WINDOW_HEIGHT, Main.WINDOW_WIDTH, fence_fill);
 
         Translate powerBarPosition = new Translate(0, Main.WINDOW_HEIGHT);
 
@@ -239,7 +244,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
 
         this.menu = new MenuBar(MAX_LIVES, WINDOW_WIDTH, MAX_TIME);
 
-        this.root.getChildren().addAll(this.fence, this.player, this.powerBar, this.menu);
+        this.root.getChildren().addAll(fence, this.player, this.powerBar, this.menu);
 
         this.addHoles();
         this.addTerrain(ice_fill, mud_fill);
@@ -247,7 +252,11 @@ public class Main extends Application implements EventHandler<MouseEvent> {
         this.addTeleports();
 
         for (Node e : this.root.getChildren()) {
-            Token.addNode(e);
+            if (e instanceof Shape) Token.addNode((Shape) e);
+            else if (e instanceof TeleportationField) {
+                Token.addNode(((TeleportationField) e).getField1());
+                Token.addNode(((TeleportationField) e).getField2());
+            }
         }
         this.tokens = new ArrayList<>();
 
@@ -259,7 +268,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                         Main.PLAYER_MAX_ANGLE_OFFSET
                 )
         );
-        scene.addEventHandler(KeyEvent.KEY_PRESSED, keyEvent -> this.handleKeyPressed(keyEvent));
+        scene.addEventHandler(KeyEvent.KEY_PRESSED, this::handleKeyPressed);
 
         scene.addEventHandler(MouseEvent.ANY, this);
 
@@ -269,14 +278,23 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                     if (this.menu.update(deltaSeconds)) {
                         this.endAttempt();
                     }
+                    for (int i = 0; i < this.enemies.size(); i++) {
+                        Enemy t = enemies.get(i);
+                        if (t.update(deltaSeconds)) {
+                            this.enemies.remove(t);
+                            this.root.getChildren().remove(t);
+                            t = null;
+                            i--;
+                        }
+                    }
 
                     if (!this.gameover && (tokenTime -= deltaSeconds) <= 0) {
                         tokenTime = 4;
                         Token t;
                         double rnd = Math.random();
-                        if (rnd < 1 / 3) {
+                        if (rnd < 0.33) {
                             t = new TimeToken(FENCE_WIDTH, FENCE_WIDTH, WINDOW_WIDTH - FENCE_WIDTH, WINDOW_HEIGHT - FENCE_WIDTH, TOKEN_RADIUS, this.menu);
-                        } else if (rnd >= 2 / 3) {
+                        } else if (rnd >= 0.66) {
                             t = new LifeToken(FENCE_WIDTH, FENCE_WIDTH, WINDOW_WIDTH - FENCE_WIDTH, WINDOW_HEIGHT - FENCE_WIDTH, TOKEN_RADIUS, this.menu);
                         } else {
                             t = new PointsToken(FENCE_WIDTH, FENCE_WIDTH, WINDOW_WIDTH - FENCE_WIDTH, WINDOW_HEIGHT - FENCE_WIDTH, TOKEN_RADIUS, this.menu);
@@ -285,6 +303,14 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                         this.tokens.add(t);
                         Token.addNode(t);
                     }
+
+                    if (!this.gameover && (enemyTime -= deltaSeconds) <= 0) {
+                        enemyTime = 3;
+                        Enemy e = new Enemy(PLAYER_WIDTH, PLAYER_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, ENEMY_SPEED);
+                        this.enemies.add(e);
+                        this.root.getChildren().add(e);
+                    }
+
 
                     for (int i = 0; i < this.tokens.size(); i++) {
                         Token t = tokens.get(i);
@@ -331,7 +357,6 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 case 0:
                                     continue;
                                 default:
-                                    continue;
                             }
                         }
                         boolean stopped = this.ball.update(
@@ -343,6 +368,7 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 damp,
                                 Main.MIN_BALL_SPEED
                         );
+
 
                         boolean isInHole = false;
                         boolean toFast = this.ball.getSpeed() > MAX_BALL_SPEED;
@@ -361,8 +387,17 @@ public class Main extends Application implements EventHandler<MouseEvent> {
                                 }
                             }
                         }
+
+                        boolean hit = false;
+                        for (Enemy e : this.enemies) {
+                            if (e.handleCollision(this.ball)) {
+                                hit = true;
+                                break;
+                            }
+                        }
+
                         //TODO generisati tokene i letece objekte
-                        if (stopped && ball != null) {
+                        if ((stopped || hit) && ball != null) {
                             endAttempt();
                         }
                     } else if (this.mouse_hold) {

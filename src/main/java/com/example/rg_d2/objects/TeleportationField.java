@@ -1,6 +1,5 @@
 package com.example.rg_d2.objects;
 
-import com.example.rg_d2.Main;
 import com.example.rg_d2.Timer;
 import javafx.geometry.Bounds;
 import javafx.scene.Group;
@@ -15,11 +14,20 @@ public class TeleportationField extends Group {
     private final Field field1;
     private final Field field2;
     private double timeElapsed1;
+
+    public Field getField1() {
+        return field1;
+    }
+
+    public Field getField2() {
+        return field2;
+    }
+
     private double timeElapsed2;
     private boolean teleported1;
     private boolean teleported2;
 
-    protected class Field extends Rectangle {
+    protected static class Field extends Rectangle {
         public Field(double size, Color color) {
             super(size, size, color);
         }
@@ -37,9 +45,7 @@ public class TeleportationField extends Group {
             double maxX = fieldBounds.getMaxX();
             double maxY = fieldBounds.getMaxY();
 
-            boolean result = (ballX < maxX && ballX > minX) && (ballY > minY && ballY < maxY);
-
-            return result;
+            return (ballX < maxX && ballX > minX) && (ballY > minY && ballY < maxY);
         }
     }
 
